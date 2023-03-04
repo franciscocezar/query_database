@@ -1,6 +1,7 @@
 import ttkbootstrap as ttk
 import pandas as pd
 import sqlite3
+from pathlib import Path
 from ttkbootstrap.constants import *
 
 
@@ -120,15 +121,12 @@ class App:
     def connect_db(self):
         # Creates and connects to the database.
         # self.conn = sqlite3.connect('lista_proprietarios.db')
+        way = Path.cwd()
+        self.df = pd.read_csv(way / 'portaria_bd.csv')
 
-        # self.df = pd.read_csv('/Users/franciscojunior/Downloads/project_agenda/bd_portaria.csv', sep=';')
-
-        # Cria uma conexão com o banco de dados SQLite
         self.conn = sqlite3.connect('banco_de_dados.db')
-
-        # Cria uma tabela no banco de dados SQLite com o nome 'nome_da_tabela'
-        # self.df.to_sql('bd_portaria', self.conn, if_exists='replace', index=False)
         self.cursor = self.conn.cursor()
+        self.df.to_sql('portaria_bd', self.conn, if_exists='replace', index=False)
 
         print('Connecting to the database.')
 
@@ -147,8 +145,8 @@ class App:
         self.connect_db()
         data_list = self.cursor.execute(
             """ SELECT *
-                FROM bd_portaria
-                ORDER BY Dia DESC
+                FROM portaria_bd
+                ORDER BY rowid
                 LIMIT 100; """
         )
 
@@ -158,13 +156,13 @@ class App:
         for data in data_list:
             if count % 2 == 0:
                 self.database_data_list.insert(
-                    '', ttk.END, values=(data[1], data[2], data[3],
-                                             data[4], data[5], data[6], data[7]), iid=count, tag=('evenrow',)
+                    '', ttk.END, values=(data[0], data[1], data[2], data[3],
+                                             data[4], data[5], data[6]), iid=count, tag=('evenrow',)
                 )
             else:
                 self.database_data_list.insert(
-                    '', ttk.END, values=(data[1], data[2], data[3],
-                                             data[4], data[5], data[6], data[7]), iid=count, tag=('oddrow',)
+                    '', ttk.END, values=(data[0], data[1], data[2], data[3],
+                                             data[4], data[5], data[6]), iid=count, tag=('oddrow',)
                 )
             count += 1
 
@@ -175,15 +173,15 @@ class App:
         self.database_data_list.delete(*self.database_data_list.get_children())
         self.query = self.query_entry.get()
 
-        if self.query.isnumeric():
+        if self.query.isnumeric() and len(self.query) == 2:
             self.cursor.execute(f"""
             SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa, rowid
-            FROM bd_portaria
+            FROM portaria_bd
             WHERE Casa LIKE '%{self.query}%'""")
         else:
             self.cursor.execute(f"""
                 SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa, rowid
-                FROM bd_portaria
+                FROM portaria_bd
                 WHERE 
                      Placa LIKE '%{self.query}%' OR 
                      Cor LIKE '%{self.query}%' OR
