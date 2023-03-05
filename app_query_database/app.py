@@ -27,7 +27,6 @@ class App:
 
         APP_WIDTH = 950
         APP_HEIGHT = 500
-
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
 
@@ -45,7 +44,8 @@ class App:
         self.frame_new_window.place(relx=0.02, rely=0.2, relwidth=0.96, relheight=0.78)
 
     def treeview(self):
-        treeview = ttk.Treeview(master=self.frame_new_window, columns=[1, 2, 3, 4, 5, 6, 7], show='headings', style='cyborg.Treeview')
+        treeview = ttk.Treeview(master=self.frame_new_window, columns=[1, 2, 3, 4, 5, 6, 7], show='headings',
+                                style='cyborg.Treeview')
         style = ttk.Style()
         style.map(
             'Treeview',
@@ -119,51 +119,35 @@ class App:
             self.button_query.configure(command=self.buscar_button)
 
     def connect_db(self):
-        # Creates and connects to the database.
-        # self.conn = sqlite3.connect('lista_proprietarios.db')
         way = Path.cwd()
-        self.df = pd.read_csv(way / 'portaria_bd.csv')
+        df = pd.read_csv(way / 'portaria_bd.csv')
 
         self.conn = sqlite3.connect('banco_de_dados.db')
         self.cursor = self.conn.cursor()
-        self.df.to_sql('portaria_bd', self.conn, if_exists='replace', index=False)
+        df.to_sql('portaria_bd', self.conn, if_exists='replace', index=False)
 
         print('Connecting to the database.')
 
     def disconnect_db(self):
-        # Disconnects to the database.
         self.conn.close()
         print('Disconnecting to the database.')
 
     def select_list(self):
-        # Shows database data on the screen.
 
-        # Deletes all the data shown on the screen to update the list.
         self.database_data_list.delete(*self.database_data_list.get_children())
-
-        # Connect to database and gets data
         self.connect_db()
-        data_list = self.cursor.execute(
-            """ SELECT *
-                FROM portaria_bd
-                ORDER BY rowid
-                LIMIT 100; """
-        )
-
-        # Gets selected data and shows it on the screen
+        data_list = self.cursor.execute(""" SELECT * FROM portaria_bd ORDER BY rowid LIMIT 100; """)
 
         count = 0
         for data in data_list:
             if count % 2 == 0:
                 self.database_data_list.insert(
-                    '', ttk.END, values=(data[0], data[1], data[2], data[3],
-                                             data[4], data[5], data[6]), iid=count, tag=('evenrow',)
-                )
+                    '', ttk.END, values=(data[0], data[1], data[2], data[3], data[4],
+                                         data[5], data[6]), iid=count, tag=('evenrow',))
             else:
                 self.database_data_list.insert(
-                    '', ttk.END, values=(data[0], data[1], data[2], data[3],
-                                             data[4], data[5], data[6]), iid=count, tag=('oddrow',)
-                )
+                    '', ttk.END, values=(data[0], data[1], data[2], data[3], data[4],
+                                         data[5], data[6]), iid=count, tag=('oddrow',))
             count += 1
 
         self.disconnect_db()
@@ -173,7 +157,7 @@ class App:
         self.database_data_list.delete(*self.database_data_list.get_children())
         self.query = self.query_entry.get()
 
-        if self.query.isnumeric() and len(self.query) == 2:
+        if self.query.isnumeric() and len(self.query) <= 2 and 0 < int(self.query) <= 49:
             self.cursor.execute(f"""
             SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa, rowid
             FROM portaria_bd
