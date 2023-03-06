@@ -19,8 +19,8 @@ class App:
         self.widgets()
         self.treeview()
         self.select_list()
-        # self.query_entry.bind('<FocusOut>', self.insert)
-        # self.query_entry.bind('<FocusIn>', self.remove)
+        self.query_entry.bind('<FocusOut>', self.insert)
+        self.query_entry.bind('<FocusIn>', self.remove)
         self.root.mainloop()
 
     def center(self):
@@ -86,7 +86,6 @@ class App:
         self.database_data_list.configure(yscrollcommand=frame_new_window_scrollbar.set)
 
     def widgets(self):
-        # search_in_db method's Button and Entry
         self.button_query = ttk.Button(master=self.frame_query_button,
                                        text="Buscar", command=self.buscar_button, bootstyle=DARK)
         self.button_query.place(relx=0.32, rely=0.5, relwidth=0.2, anchor=CENTER)
@@ -95,15 +94,15 @@ class App:
                                      width=120)
         self.query_entry.place(relx=0.62, rely=0.5, relwidth=0.33, anchor=CENTER)
         self.query_entry.bind('<Return>', self.buscar_button)
-        # self.insert()
+        self.insert()
 
-    # def remove(self, event=None):
-    #     self.query_entry.delete(0, END)
-    #     self.query_entry.configure(foreground='white')
-    #
-    # def insert(self, event=None):
-    #     self.query_entry.insert(0, 'Enter pra Buscar')
-    #     self.query_entry.configure(foreground='gray30')
+    def remove(self, event=None):
+        self.query_entry.delete(0, END)
+        self.query_entry.configure(foreground='white')
+
+    def insert(self, event=None):
+        self.query_entry.insert(0, 'Ex.: joao silva ou gol/prata')
+        self.query_entry.configure(foreground='gray30')
 
     def buscar_button(self, event=None):
         self.read_data()
@@ -137,7 +136,7 @@ class App:
 
         self.database_data_list.delete(*self.database_data_list.get_children())
         self.connect_db()
-        data_list = self.cursor.execute(""" SELECT * FROM portaria_bd ORDER BY rowid LIMIT 100; """)
+        data_list = self.cursor.execute(""" SELECT * FROM portaria_bd ORDER BY rowid LIMIT 1000; """)
 
         count = 0
         for data in data_list:
@@ -157,23 +156,15 @@ class App:
         self.connect_db()
         self.database_data_list.delete(*self.database_data_list.get_children())
         query = self.query_entry.get()
-        print(query)
-        cor = None
-        self.modelo = None
-        self.marca = None
+        cor = modelo = marca = None
+
         if '/' in query:
             cores = ['Azul', 'Vinho', 'Vermelho', 'Preto', 'Prata', 'Cinza', 'Verde', 'Branco', 'Beje', 'Marrom',
                      'Amarelo', 'Laranja', 'Bege', 'Rosa', 'Dourado', 'Roxo']
-            cores = list(map(lambda x: x.lower(), cores))
-            # Modelo/Marca/Cor
             value = query.split('/')
-            print(f'value: {value}')
-            value = list(map(lambda x: x.lower(), value))
-
             hh = []
             for color in value:
-
-                padrao = re.compile(fr'{color[:-1]}[aelo]')
+                padrao = re.compile(fr'{color[:-1]}[maelo]', re.I)
                 for palavra in cores:
                     if re.match(padrao, palavra):
                         cor = color[:-1]
@@ -181,16 +172,16 @@ class App:
                         hh = value
                         break
             if len(hh) == 2:
-                self.modelo = hh[0]
-                self.marca = hh[1]
+                modelo = hh[0]
+                marca = hh[1]
             else:
-                self.modelo = hh[0]
-                self.marca = hh[0]
+                modelo = hh[0]
+                marca = hh[0]
             self.cursor.execute(f"""
             SELECT *
             FROM portaria_bd
-            WHERE ((Modelo LIKE '%{self.modelo}%' OR Marca LIKE '%{self.marca}%') AND Cor LIKE '%{cor}%') OR 
-            ((Marca LIKE '%{self.modelo}%' OR Modelo LIKE '%{self.marca}%') AND Cor LIKE '%{cor}%') ORDER BY Casa LIMIT 50
+            WHERE ((Modelo LIKE '%{modelo}%' OR Marca LIKE '%{marca}%') AND Cor LIKE '%{cor}%') OR 
+            ((Marca LIKE '%{modelo}%' OR Modelo LIKE '%{marca}%') AND Cor LIKE '%{cor}%') ORDER BY Casa LIMIT 50
             """)
         else:
             if query.isnumeric() and len(query) <= 2 and 0 < int(query) <= 49:
