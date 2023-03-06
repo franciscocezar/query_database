@@ -1,6 +1,7 @@
 import ttkbootstrap as ttk
 import pandas as pd
 import sqlite3
+import re
 from pathlib import Path
 from ttkbootstrap.constants import *
 
@@ -18,8 +19,8 @@ class App:
         self.widgets()
         self.treeview()
         self.select_list()
-        self.query_entry.bind('<FocusOut>', self.insert)
-        self.query_entry.bind('<FocusIn>', self.remove)
+        # self.query_entry.bind('<FocusOut>', self.insert)
+        # self.query_entry.bind('<FocusIn>', self.remove)
         self.root.mainloop()
 
     def center(self):
@@ -94,15 +95,15 @@ class App:
                                      width=120)
         self.query_entry.place(relx=0.62, rely=0.5, relwidth=0.33, anchor=CENTER)
         self.query_entry.bind('<Return>', self.buscar_button)
-        self.insert()
+        # self.insert()
 
-    def remove(self, event=None):
-        self.query_entry.delete(0, END)
-        self.query_entry.configure(foreground='white')
-
-    def insert(self, event=None):
-        self.query_entry.insert(0, 'Enter p/ Buscar')
-        self.query_entry.configure(foreground='gray30')
+    # def remove(self, event=None):
+    #     self.query_entry.delete(0, END)
+    #     self.query_entry.configure(foreground='white')
+    #
+    # def insert(self, event=None):
+    #     self.query_entry.insert(0, 'Enter pra Buscar')
+    #     self.query_entry.configure(foreground='gray30')
 
     def buscar_button(self, event=None):
         self.read_data()
@@ -155,25 +156,60 @@ class App:
     def read_data(self):
         self.connect_db()
         self.database_data_list.delete(*self.database_data_list.get_children())
-        self.query = self.query_entry.get()
+        query = self.query_entry.get()
+        print(query)
+        cor = None
+        self.modelo = None
+        self.marca = None
+        if '/' in query:
+            cores = ['Azul', 'Vinho', 'Vermelho', 'Preto', 'Prata', 'Cinza', 'Verde', 'Branco', 'Beje', 'Marrom',
+                     'Amarelo', 'Laranja', 'Bege', 'Rosa', 'Dourado', 'Roxo']
+            cores = list(map(lambda x: x.lower(), cores))
+            # Modelo/Marca/Cor
+            value = query.split('/')
+            print(f'value: {value}')
+            value = list(map(lambda x: x.lower(), value))
 
-        if self.query.isnumeric() and len(self.query) <= 2 and 0 < int(self.query) <= 49:
+            hh = []
+            for color in value:
+
+                padrao = re.compile(fr'{color[:-1]}[aelo]')
+                for palavra in cores:
+                    if re.match(padrao, palavra):
+                        cor = color[:-1]
+                        value.remove(color)
+                        hh = value
+                        break
+            if len(hh) == 2:
+                self.modelo = hh[0]
+                self.marca = hh[1]
+            else:
+                self.modelo = hh[0]
+                self.marca = hh[0]
             self.cursor.execute(f"""
-            SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa, rowid
+            SELECT *
             FROM portaria_bd
-            WHERE Casa LIKE '%{self.query}%'""")
+            WHERE ((Modelo LIKE '%{self.modelo}%' OR Marca LIKE '%{self.marca}%') AND Cor LIKE '%{cor}%') OR 
+            ((Marca LIKE '%{self.modelo}%' OR Modelo LIKE '%{self.marca}%') AND Cor LIKE '%{cor}%') ORDER BY Casa LIMIT 50
+            """)
         else:
-            self.cursor.execute(f"""
-                SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa, rowid
+            if query.isnumeric() and len(query) <= 2 and 0 < int(query) <= 49:
+                self.cursor.execute(f"""
+                SELECT *
                 FROM portaria_bd
-                WHERE 
-                     Placa LIKE '%{self.query}%' OR 
-                     Cor LIKE '%{self.query}%' OR
-                     Modelo LIKE '%{self.query}%' OR
-                     Marca LIKE '%{self.query}%' OR
-                     Motorista LIKE '%{self.query}%' OR
-                     Proprietário LIKE '%{self.query}%'                
-                ORDER BY rowid; """)
+                WHERE Casa LIKE '%{query}%'""")
+            else:
+                self.cursor.execute(f"""
+                    SELECT *, rowid
+                    FROM portaria_bd
+                    WHERE 
+                         Placa LIKE '%{query}%' OR 
+                         Cor LIKE '%{query}%' OR
+                         Modelo LIKE '%{query}%' OR
+                         Marca LIKE '%{query}%' OR
+                         Motorista LIKE '%{query}%' OR
+                         Proprietário LIKE '%{query}%'                
+                    ORDER BY rowid; """)
 
         searched_data = self.cursor.fetchall()
 
