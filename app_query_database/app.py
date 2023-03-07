@@ -1,7 +1,6 @@
 import ttkbootstrap as ttk
 import pandas as pd
 import sqlite3
-# import re
 from pathlib import Path
 from ttkbootstrap.constants import *
 
@@ -90,13 +89,14 @@ class App:
         self.query_entry.place(relx=0.62, rely=0.5, relwidth=0.33, anchor=CENTER)
         self.query_entry.bind('<Return>', self.buscar_button)
         self.insert()
+        self.label = ttk.Label()
 
     def remove(self, event=None):
         self.query_entry.delete(0, END)
         self.query_entry.configure(foreground='white')
 
     def insert(self, event=None):
-        self.query_entry.insert(0, 'Ex.: joao silva ou gol/prata')
+        self.query_entry.insert(0, 'Ex.: joao silva ou gol/prata/[joao/7')
         self.query_entry.configure(foreground='gray30')
 
     def buscar_button(self, event=None):
@@ -151,7 +151,7 @@ class App:
         self.connect_db()
         self.database_data_list.delete(*self.database_data_list.get_children())
         query = self.query_entry.get()
-        cor = modelo = marca = casa = None
+        cor = modelo = marca = casa = pessoa = None
 
         if '/' in query:
             cores = ['Azul', 'Vinho', 'Vermelho', 'Verm', 'Preto', 'Prata', 'Cinza', 'Verde', 'Branco', 'Beje', 'Marrom',
@@ -163,35 +163,38 @@ class App:
 
             print(values)
             pesquisa = "SELECT * FROM portaria_bd WHERE "
-            hh = []
 
             for valor in values:
-                for cor in cores:
-                    if not valor.isnumeric() and valor[:-1] == cor[:-1]:
-                        # padrao = re.compile(fr'.{color[:-1]}[aelom][^0-9]', re.I)
-                        pesquisa += f"Cor LIKE '%{valor[:-1]}%' AND "
-                        values.remove(valor)
-                        hh = values
-                        break
-            if hh:
-                for i in hh:
+                if '[' in valor:
+                    pessoa = valor
+                    gente = pessoa.replace('[', '')
+                    pesquisa += f"(Motorista LIKE '%{gente}%' OR Proprietário LIKE '%{gente}%') AND "
+
+                if not valor.isnumeric():
+                    for cour in cores:
+                        if valor[:-1] == cour[:-1]:
+                            pesquisa += f"Cor LIKE '%{valor[:-1]}%' AND "
+                            cor = valor
+                            break
+
+            if pessoa: values.remove(pessoa)
+            if cor: values.remove(cor)
+
+            if values:
+                for i in values:
                     if i.isnumeric() and len(i) <= 2 and 0 < int(i) <= 49:
                         pesquisa += f"Casa LIKE '{i}' AND "
                         print(i)
-                        hh.remove(i)
-                if len(hh) == 2:
-                    marca = hh[1]
-                    modelo = hh[0]
+                        values.remove(i)
+                        break
+                if len(values) == 2:
+                    marca = values[1]
+                    modelo = values[0]
                     pesquisa += f"((Modelo LIKE '%{modelo}%' OR  Marca LIKE '%{marca}%') OR " \
                                 f"(Marca LIKE '%{modelo}%' OR  Modelo LIKE '%{marca}%')) AND "
-                elif len(hh) == 1:
-                    pesquisa += f"(Modelo LIKE '%{hh[0]}%' OR  Marca LIKE '%{hh[0]}%') AND "
-            # self.cursor.execute(f"""
-            # SELECT *
-            # FROM portaria_bd
-            # WHERE ((Modelo LIKE '%{modelo}%' OR Marca LIKE '%{marca}%') OR Cor LIKE '%{cor}%' AND Casa LIKE '%{casa}%') OR
-            # ((Marca LIKE '%{modelo}%' OR Modelo LIKE '%{marca}%') OR Cor LIKE '%{cor}%' AND Casa LIKE '%{casa}%') ORDER BY Casa
-            # """)9
+                elif len(values) == 1:
+                    pesquisa += f"(Modelo LIKE '%{values[0]}%' OR  Marca LIKE '%{values[0]}%') AND "
+
             print(pesquisa)
             pesquisa = pesquisa[:-4]
             self.cursor.execute(pesquisa)
@@ -216,13 +219,22 @@ class App:
 
         searched_data = self.cursor.fetchall()
 
-        count = 0
-        for i in searched_data:
-            if count % 2 == 0:
-                self.database_data_list.insert('', ttk.END, values=i, tag=('evenrow',))
-            else:
-                self.database_data_list.insert('', ttk.END, values=i, tag=('oddrow',))
-            count += 1
+        if searched_data:
+            if self.label:
+                self.label.destroy()
+            count = 0
+            for i in searched_data:
+                if count % 2 == 0:
+                    self.database_data_list.insert('', ttk.END, values=i, tag=('evenrow',))
+                else:
+                    self.database_data_list.insert('', ttk.END, values=i, tag=('oddrow',))
+                count += 1
+        else:
+            self.label = ttk.Label(master=self.frame_new_window, bootstyle="inverse", padding=5, anchor=CENTER,
+                                    text=f'Sem resultados para: {query}')
+            self.label.place(relx=0.5, rely=0.2, relwidth=0.4, anchor=CENTER)
+
+            print(f'Sem resultados para: {query}')
 
         self.disconnect_db()
         self.query_entry.delete(0, ttk.END)
