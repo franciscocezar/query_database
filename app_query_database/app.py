@@ -1,16 +1,12 @@
 import ttkbootstrap as ttk
 import pandas as pd
 import sqlite3
-import re
+# import re
 from pathlib import Path
 from ttkbootstrap.constants import *
 
 
 class App:
-
-    WIDTH = 800
-    HEIGHT = 600
-
     def __init__(self):
         self.root = ttk.Window(themename="cyborg")
         self.root.title("PORTARIA [BANCO DE DADOS]")
@@ -24,7 +20,6 @@ class App:
         self.root.mainloop()
 
     def center(self):
-        # Position App to the Centre of the Screen.
 
         APP_WIDTH = 950
         APP_HEIGHT = 500
@@ -136,7 +131,7 @@ class App:
 
         self.database_data_list.delete(*self.database_data_list.get_children())
         self.connect_db()
-        data_list = self.cursor.execute(""" SELECT * FROM portaria_bd ORDER BY rowid LIMIT 1000; """)
+        data_list = self.cursor.execute(""" SELECT * FROM portaria_bd ORDER BY rowid LIMIT 200; """)
 
         count = 0
         for data in data_list:
@@ -156,33 +151,50 @@ class App:
         self.connect_db()
         self.database_data_list.delete(*self.database_data_list.get_children())
         query = self.query_entry.get()
-        cor = modelo = marca = None
+        cor = modelo = marca = casa = None
 
         if '/' in query:
-            cores = ['Azul', 'Vinho', 'Vermelho', 'Preto', 'Prata', 'Cinza', 'Verde', 'Branco', 'Beje', 'Marrom',
+            cores = ['Azul', 'Vinho', 'Vermelho', 'Verm', 'Preto', 'Prata', 'Cinza', 'Verde', 'Branco', 'Beje', 'Marrom',
                      'Amarelo', 'Laranja', 'Bege', 'Rosa', 'Dourado', 'Roxo']
-            value = query.split('/')
+            cores = list(map(lambda x: x.lower(), cores))
+
+            values = query.split('/')
+            values = list(map(lambda x: x.lower(), values))
+
+            print(values)
+            pesquisa = "SELECT * FROM portaria_bd WHERE "
             hh = []
-            for color in value:
-                padrao = re.compile(fr'{color[:-1]}[maelo]', re.I)
-                for palavra in cores:
-                    if re.match(padrao, palavra):
-                        cor = color[:-1]
-                        value.remove(color)
-                        hh = value
+
+            for valor in values:
+                for cor in cores:
+                    if not valor.isnumeric() and valor[:-1] == cor[:-1]:
+                        # padrao = re.compile(fr'.{color[:-1]}[aelom][^0-9]', re.I)
+                        pesquisa += f"Cor LIKE '%{valor[:-1]}%' AND "
+                        values.remove(valor)
+                        hh = values
                         break
-            if len(hh) == 2:
-                modelo = hh[0]
-                marca = hh[1]
-            else:
-                modelo = hh[0]
-                marca = hh[0]
-            self.cursor.execute(f"""
-            SELECT *
-            FROM portaria_bd
-            WHERE ((Modelo LIKE '%{modelo}%' OR Marca LIKE '%{marca}%') AND Cor LIKE '%{cor}%') OR 
-            ((Marca LIKE '%{modelo}%' OR Modelo LIKE '%{marca}%') AND Cor LIKE '%{cor}%') ORDER BY Casa LIMIT 50
-            """)
+            if hh:
+                for i in hh:
+                    if i.isnumeric() and len(i) <= 2 and 0 < int(i) <= 49:
+                        pesquisa += f"Casa LIKE '{i}' AND "
+                        print(i)
+                        hh.remove(i)
+                if len(hh) == 2:
+                    marca = hh[1]
+                    modelo = hh[0]
+                    pesquisa += f"((Modelo LIKE '%{modelo}%' OR  Marca LIKE '%{marca}%') OR " \
+                                f"(Marca LIKE '%{modelo}%' OR  Modelo LIKE '%{marca}%')) AND "
+                elif len(hh) == 1:
+                    pesquisa += f"(Modelo LIKE '%{hh[0]}%' OR  Marca LIKE '%{hh[0]}%') AND "
+            # self.cursor.execute(f"""
+            # SELECT *
+            # FROM portaria_bd
+            # WHERE ((Modelo LIKE '%{modelo}%' OR Marca LIKE '%{marca}%') OR Cor LIKE '%{cor}%' AND Casa LIKE '%{casa}%') OR
+            # ((Marca LIKE '%{modelo}%' OR Modelo LIKE '%{marca}%') OR Cor LIKE '%{cor}%' AND Casa LIKE '%{casa}%') ORDER BY Casa
+            # """)9
+            print(pesquisa)
+            pesquisa = pesquisa[:-4]
+            self.cursor.execute(pesquisa)
         else:
             if query.isnumeric() and len(query) <= 2 and 0 < int(query) <= 49:
                 self.cursor.execute(f"""
