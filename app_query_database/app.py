@@ -1,6 +1,5 @@
 import ttkbootstrap as ttk
 import pandas as pd
-import awesometkinter as atk
 import sqlite3
 from pathlib import Path
 from ttkbootstrap.constants import *
@@ -86,7 +85,6 @@ class App:
         self.query_entry = ttk.Entry(master=self.query_entry_frame,
                                      width=120, )
         self.query_entry.place(relx=0.5, rely=0.5, relwidth=0.33, anchor=CENTER)
-        atk.tooltip(self.query_entry, texto)
         self.query_entry.bind('<Return>', self.read_data)
         self.insert()
         self.label = ttk.Label()
@@ -188,9 +186,9 @@ class App:
         else:
             if query.isnumeric() and len(query) <= 2 and 0 < int(query) <= 49:
                 self.cursor.execute(f"""
-                SELECT Placa, 
+                SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa 
                 FROM portaria_bd
-                WHERE Casa LIKE '%{query}%' ORDER BY Data DESC""")
+                WHERE Casa LIKE '{query}' ORDER BY Data DESC""")
             else:
                 self.cursor.execute(f"""
                     SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa 
