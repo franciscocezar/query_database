@@ -1,5 +1,6 @@
 import ttkbootstrap as ttk
 import pandas as pd
+import awesometkinter as atk
 import sqlite3
 from pathlib import Path
 from ttkbootstrap.constants import *
@@ -76,9 +77,16 @@ class App:
         self.database_data_list.configure(yscrollcommand=frame_new_window_scrollbar.set)
 
     def widgets(self):
+        texto = "Busque por item individual (completos ou não)" \
+                "\n\nUse '/' para mais de um: \nmodelo/cor/casa   gol/prata/7" \
+                "\n\nCom nome da pessoa use '[' antes do nome:" \
+                "\n[motorista/modelo/casa    [ana/gol/11" \
+                "\n\nA ordem não importa"
+
         self.query_entry = ttk.Entry(master=self.query_entry_frame,
                                      width=120, )
         self.query_entry.place(relx=0.5, rely=0.5, relwidth=0.33, anchor=CENTER)
+        atk.tooltip(self.query_entry, texto)
         self.query_entry.bind('<Return>', self.read_data)
         self.insert()
         self.label = ttk.Label()
@@ -174,6 +182,7 @@ class App:
                 elif len(values) == 1:
                     pesquisa += f"(Modelo LIKE '%{values[0]}%' OR  Marca LIKE '%{values[0]}%') AND "
 
+            print(pesquisa)
             pesquisa = pesquisa[:-4]
             self.cursor.execute(f'{pesquisa} ORDER BY Data DESC')
         else:
