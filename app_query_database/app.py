@@ -80,14 +80,14 @@ class App:
         self.database_data_list.configure(yscrollcommand=frame_new_window_scrollbar.set)
 
     def widgets(self):
-        self.button_query = ttk.Button(master=self.frame_query_button,
-                                       text="Buscar", command=self.buscar_button, bootstyle=DARK)
-        self.button_query.place(relx=0.32, rely=0.5, relwidth=0.2, anchor=CENTER)
+        # self.button_query = ttk.Button(master=self.frame_query_button,
+        #                                text="Buscar", command=self.buscar_button, bootstyle=DARK)
+        # self.button_query.place(relx=0.32, rely=0.5, relwidth=0.2, anchor=CENTER)
 
         self.query_entry = ttk.Entry(master=self.frame_query_button,
-                                     width=120)
-        self.query_entry.place(relx=0.62, rely=0.5, relwidth=0.33, anchor=CENTER)
-        self.query_entry.bind('<Return>', self.buscar_button)
+                                     width=120, )
+        self.query_entry.place(relx=0.5, rely=0.5, relwidth=0.33, anchor=CENTER)
+        self.query_entry.bind('<Return>', self.read_data)
         self.insert()
         self.label = ttk.Label()
 
@@ -96,22 +96,22 @@ class App:
         self.query_entry.configure(foreground='white')
 
     def insert(self, event=None):
-        self.query_entry.insert(0, 'Ex.: joao silva ou gol/prata/[joao/7')
+        self.query_entry.insert(0, 'Busque')
         self.query_entry.configure(foreground='gray30')
 
-    def buscar_button(self, event=None):
-        self.read_data()
-        if self.button_query:
-            self.button_query.configure(text='Voltar')
-            self.button_query.configure(bootstyle=[SECONDARY, OUTLINE])
-            self.button_query.configure(command=self.voltar_button)
-
-    def voltar_button(self):
-        self.select_list()
-        if self.button_query:
-            self.button_query.configure(text='Buscar')
-            self.button_query.configure(bootstyle=DARK)
-            self.button_query.configure(command=self.buscar_button)
+    # def buscar_button(self, event=None):
+    #     self.read_data()
+    #     if self.button_query:
+    #         self.button_query.configure(text='Voltar')
+    #         self.button_query.configure(bootstyle=[SECONDARY, OUTLINE])
+    #         self.button_query.configure(command=self.voltar_button)
+    #
+    # def voltar_button(self):
+    #     self.select_list()
+    #     if self.button_query:
+    #         self.button_query.configure(text='Buscar')
+    #         self.button_query.configure(bootstyle=DARK)
+    #         self.button_query.configure(command=self.buscar_button)
 
     def connect_db(self):
         way = Path.cwd()
@@ -147,7 +147,7 @@ class App:
 
         self.disconnect_db()
 
-    def read_data(self):
+    def read_data(self, event=None):
         self.connect_db()
         self.database_data_list.delete(*self.database_data_list.get_children())
         query = self.query_entry.get()
