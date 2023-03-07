@@ -31,15 +31,15 @@ class App:
         self.root.geometry(f"{APP_WIDTH}x{APP_HEIGHT}+{int(app_center_coordinate_x)}+{int(app_center_coordinate_y)}")
 
     def frame(self):
-        self.frame_query_button = ttk.Frame(master=self.root, bootstyle="cyborg")
+        self.query_entry_frame = ttk.Frame(master=self.root, bootstyle="cyborg")
 
-        self.frame_query_button.place(relx=0.02, rely=0.02, relwidth=0.96, relheight=0.15)
+        self.query_entry_frame.place(relx=0.02, rely=0.02, relwidth=0.96, relheight=0.15)
 
-        self.frame_new_window = ttk.Frame(master=self.root, bootstyle="cyborg")
-        self.frame_new_window.place(relx=0.02, rely=0.2, relwidth=0.96, relheight=0.78)
+        self.treeview_frame = ttk.Frame(master=self.root, bootstyle="cyborg")
+        self.treeview_frame.place(relx=0.02, rely=0.2, relwidth=0.96, relheight=0.78)
 
     def treeview(self):
-        treeview = ttk.Treeview(master=self.frame_new_window, columns=[1, 2, 3, 4, 5, 6, 7], show='headings',
+        treeview = ttk.Treeview(master=self.treeview_frame, columns=[1, 2, 3, 4, 5, 6, 7], show='headings',
                                 style='cyborg.Treeview')
         style = ttk.Style()
         style.map(
@@ -66,25 +66,17 @@ class App:
 
         self.database_data_list.place(relx=0.01, rely=0.01, relwidth=0.98, relheight=0.97)
 
-        # lines color without selecting them
         self.database_data_list.tag_configure('oddrow', background='gray20')
         self.database_data_list.tag_configure('evenrow', background='gray10')
 
-        self.database_data_list.bind("<Double-1>")
-
-        # create CTk scrollbar
-        frame_new_window_scrollbar = ttk.Scrollbar(self.frame_new_window, bootstyle=DARK)
+        frame_new_window_scrollbar = ttk.Scrollbar(self.treeview_frame, bootstyle=DARK)
 
         frame_new_window_scrollbar.place(relx=0.98, rely=0.01, relwidth=0.017, relheight=0.98)
 
         self.database_data_list.configure(yscrollcommand=frame_new_window_scrollbar.set)
 
     def widgets(self):
-        # self.button_query = ttk.Button(master=self.frame_query_button,
-        #                                text="Buscar", command=self.buscar_button, bootstyle=DARK)
-        # self.button_query.place(relx=0.32, rely=0.5, relwidth=0.2, anchor=CENTER)
-
-        self.query_entry = ttk.Entry(master=self.frame_query_button,
+        self.query_entry = ttk.Entry(master=self.query_entry_frame,
                                      width=120, )
         self.query_entry.place(relx=0.5, rely=0.5, relwidth=0.33, anchor=CENTER)
         self.query_entry.bind('<Return>', self.read_data)
@@ -98,20 +90,6 @@ class App:
     def insert(self, event=None):
         self.query_entry.insert(0, 'Busque')
         self.query_entry.configure(foreground='gray30')
-
-    # def buscar_button(self, event=None):
-    #     self.read_data()
-    #     if self.button_query:
-    #         self.button_query.configure(text='Voltar')
-    #         self.button_query.configure(bootstyle=[SECONDARY, OUTLINE])
-    #         self.button_query.configure(command=self.voltar_button)
-    #
-    # def voltar_button(self):
-    #     self.select_list()
-    #     if self.button_query:
-    #         self.button_query.configure(text='Buscar')
-    #         self.button_query.configure(bootstyle=DARK)
-    #         self.button_query.configure(command=self.buscar_button)
 
     def connect_db(self):
         way = Path.cwd()
@@ -131,7 +109,8 @@ class App:
 
         self.database_data_list.delete(*self.database_data_list.get_children())
         self.connect_db()
-        data_list = self.cursor.execute(""" SELECT * FROM portaria_bd ORDER BY rowid LIMIT 200; """)
+        data_list = self.cursor.execute(""" SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa 
+                                            FROM portaria_bd ORDER BY Data DESC; """)
 
         count = 0
         for data in data_list:
@@ -161,8 +140,8 @@ class App:
             values = query.split('/')
             values = list(map(lambda x: x.lower(), values))
 
-            print(values)
-            pesquisa = "SELECT * FROM portaria_bd WHERE "
+            pesquisa = """ SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa 
+                           FROM portaria_bd WHERE """
 
             for valor in values:
                 if '[' in valor:
@@ -195,18 +174,17 @@ class App:
                 elif len(values) == 1:
                     pesquisa += f"(Modelo LIKE '%{values[0]}%' OR  Marca LIKE '%{values[0]}%') AND "
 
-            print(pesquisa)
             pesquisa = pesquisa[:-4]
-            self.cursor.execute(pesquisa)
+            self.cursor.execute(f'{pesquisa} ORDER BY Data DESC')
         else:
             if query.isnumeric() and len(query) <= 2 and 0 < int(query) <= 49:
                 self.cursor.execute(f"""
-                SELECT *
+                SELECT Placa, 
                 FROM portaria_bd
-                WHERE Casa LIKE '%{query}%'""")
+                WHERE Casa LIKE '%{query}%' ORDER BY Data DESC""")
             else:
                 self.cursor.execute(f"""
-                    SELECT *, rowid
+                    SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa 
                     FROM portaria_bd
                     WHERE 
                          Placa LIKE '%{query}%' OR 
@@ -215,7 +193,7 @@ class App:
                          Marca LIKE '%{query}%' OR
                          Motorista LIKE '%{query}%' OR
                          Proprietário LIKE '%{query}%'                
-                    ORDER BY rowid; """)
+                    ORDER BY Data DESC; """)
 
         searched_data = self.cursor.fetchall()
 
@@ -230,8 +208,8 @@ class App:
                     self.database_data_list.insert('', ttk.END, values=i, tag=('oddrow',))
                 count += 1
         else:
-            self.label = ttk.Label(master=self.frame_new_window, bootstyle="inverse", padding=5, anchor=CENTER,
-                                    text=f'Sem resultados para: {query}')
+            self.label = ttk.Label(master=self.treeview_frame, bootstyle="inverse", padding=5, anchor=CENTER,
+                                   text=f'Sem resultados para: {query}')
             self.label.place(relx=0.5, rely=0.2, relwidth=0.4, anchor=CENTER)
 
             print(f'Sem resultados para: {query}')
