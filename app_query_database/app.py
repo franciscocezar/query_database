@@ -4,7 +4,7 @@ import sqlite3
 from pathlib import Path
 from ttkbootstrap.constants import *
 
-#  https://drive.google.com/file/d/1KpwRoaddGHBf8KNHKmFjtW_RBq4Bz9xo/view?usp=share_link
+#  https://drive.google.com/file/d/1zZRnni6zPnHbTkcUNbh-mhxktnEuv0dy/view?usp=share_link
 class App:
     def __init__(self):
         self.root = ttk.Window(themename="cyborg")
@@ -76,20 +76,37 @@ class App:
         self.database_data_list.configure(yscrollcommand=frame_new_window_scrollbar.set)
 
     def widgets(self):
-        texto = "\n\nUse '/' para mais de um: \nmodelo/cor/casa   gol/prata/7" \
-                "\n\nCom nome da pessoa use '[' antes do nome:" \
-                "\n[motorista/modelo/casa    [ana/gol/11" \
-
-
+        self.label = ttk.Label()
         self.query_entry = ttk.Entry(master=self.query_entry_frame,
                                      width=120, )
-        self.query_entry.place(relx=0.5, rely=0.5, relwidth=0.33, anchor=CENTER)
+        self.query_entry.place(relx=0.5, rely=0.4, relwidth=0.33, anchor=CENTER)
         self.query_entry.bind('<Return>', self.read_data)
         self.insert()
-        self.label = ttk.Label()
-        self.info = ttk.Label(master=self.query_entry_frame, text=texto, bootstyle="inverse-light")
-        self.info.place(relx=0.02, rely=0.01, relwidth=0.53, relheight=1, anchor=CENTER)
 
+        self.style = ttk.Style()
+        self.style.configure('dark.TButton', font=('Arial', 10),
+                             width=10, foreground='gray50', hover='black20')
+
+        self.how_button = ttk.Button(master=self.query_entry_frame,
+                                     text='Como buscar', style='dark.TButton', command=self.showing_info)
+        self.how_button.place(relx=0.336, rely=0.65)
+
+    def showing_info(self):
+        if self.how_button:
+            texto = """        Use ' / ' para mais de um item: 
+        Ex.: modelo/cor/casa   ⇾  gol/prata/7
+
+        Com nome da pessoa use ' [ ' antes do nome:
+        Ex.: [motorista/modelo/casa   ⇾   [ana/uno/47"""
+            self.info = ttk.Label(master=self.query_entry_frame, text=texto, font=("Helvetica", 12),
+                                  foreground='white', bootstyle="cyborg", anchor=NW)
+            self.info.place(relx=0, rely=0, relwidth=0.31, relheight=1)
+            self.how_button.configure(text="Ocultar", command=self.hiding_info)
+
+    def hiding_info(self):
+        if self.how_button:
+            self.info.destroy()
+            self.how_button.configure(text="Como buscar", command=self.showing_info)
 
     def remove(self, event=None):
         self.query_entry.delete(0, END)
@@ -209,7 +226,7 @@ class App:
         searched_data = self.cursor.fetchall()
 
         if searched_data:
-            if self.label:
+            if self.label.cget("text"):
                 self.label.destroy()
             count = 0
             for i in searched_data:
