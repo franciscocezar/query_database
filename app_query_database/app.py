@@ -4,7 +4,7 @@ import sqlite3
 from pathlib import Path
 from ttkbootstrap.constants import *
 
-
+#  https://drive.google.com/file/d/1_vC6eZvFvZiAihbHaB3zXZ5gheqBrqZK/view?usp=share_link
 class App:
     def __init__(self):
         self.root = ttk.Window(themename="cyborg")
@@ -88,6 +88,9 @@ class App:
         self.query_entry.bind('<Return>', self.read_data)
         self.insert()
         self.label = ttk.Label()
+        self.info = ttk.Label(master=self.query_entry_frame, text=texto)
+        self.info.place(relx=0.2, rely=0.2, relwidth=0.33, relheight=0.8, anchor=CENTER)
+
 
     def remove(self, event=None):
         self.query_entry.delete(0, END)
@@ -186,9 +189,11 @@ class App:
         else:
             if query.isnumeric() and len(query) <= 2 and 0 < int(query) <= 49:
                 self.cursor.execute(f"""
-                SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa 
+                SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa, COUNT(*) as total 
                 FROM portaria_bd
-                WHERE Casa LIKE '{query}' ORDER BY Data DESC""")
+                WHERE Casa LIKE '{query}' 
+                GROUP BY Motorista
+                ORDER BY total ASC """)
             else:
                 self.cursor.execute(f"""
                     SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa 
