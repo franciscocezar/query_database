@@ -4,7 +4,7 @@ import sqlite3
 from pathlib import Path
 from ttkbootstrap.constants import *
 
-#  https://drive.google.com/file/d/1_vC6eZvFvZiAihbHaB3zXZ5gheqBrqZK/view?usp=share_link
+#  https://drive.google.com/file/d/1KpwRoaddGHBf8KNHKmFjtW_RBq4Bz9xo/view?usp=share_link
 class App:
     def __init__(self):
         self.root = ttk.Window(themename="cyborg")
@@ -76,11 +76,10 @@ class App:
         self.database_data_list.configure(yscrollcommand=frame_new_window_scrollbar.set)
 
     def widgets(self):
-        texto = "Busque por item individual (completos ou não)" \
-                "\n\nUse '/' para mais de um: \nmodelo/cor/casa   gol/prata/7" \
+        texto = "\n\nUse '/' para mais de um: \nmodelo/cor/casa   gol/prata/7" \
                 "\n\nCom nome da pessoa use '[' antes do nome:" \
                 "\n[motorista/modelo/casa    [ana/gol/11" \
-                "\n\nA ordem não importa"
+
 
         self.query_entry = ttk.Entry(master=self.query_entry_frame,
                                      width=120, )
@@ -88,8 +87,8 @@ class App:
         self.query_entry.bind('<Return>', self.read_data)
         self.insert()
         self.label = ttk.Label()
-        self.info = ttk.Label(master=self.query_entry_frame, text=texto)
-        self.info.place(relx=0.2, rely=0.2, relwidth=0.33, relheight=0.8, anchor=CENTER)
+        self.info = ttk.Label(master=self.query_entry_frame, text=texto, bootstyle="inverse-light")
+        self.info.place(relx=0.02, rely=0.01, relwidth=0.53, relheight=1, anchor=CENTER)
 
 
     def remove(self, event=None):
