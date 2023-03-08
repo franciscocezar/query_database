@@ -9,6 +9,7 @@ class App:
     def __init__(self):
         self.root = ttk.Window(themename="cyborg")
         self.root.title("PORTARIA [BANCO DE DADOS]")
+        self.label = None
         self.center()
         self.frame()
         self.widgets()
@@ -76,7 +77,6 @@ class App:
         self.database_data_list.configure(yscrollcommand=frame_new_window_scrollbar.set)
 
     def widgets(self):
-        self.label = ttk.Label()
         self.query_entry = ttk.Entry(master=self.query_entry_frame,
                                      width=120, )
         self.query_entry.place(relx=0.5, rely=0.4, relwidth=0.33, anchor=CENTER)
@@ -130,7 +130,7 @@ class App:
         self.conn.close()
         print('Disconnecting to the database.')
 
-    def select_list(self):
+    def select_list(self, event=None):
 
         self.database_data_list.delete(*self.database_data_list.get_children())
         self.connect_db()
@@ -224,10 +224,10 @@ class App:
                     ORDER BY Data DESC; """)
 
         searched_data = self.cursor.fetchall()
+        if self.label:
+            self.label.destroy()
 
         if searched_data:
-            if self.label.cget("text"):
-                self.label.destroy()
             count = 0
             for i in searched_data:
                 if count % 2 == 0:
@@ -241,6 +241,7 @@ class App:
             self.label.place(relx=0.5, rely=0.2, relwidth=0.4, anchor=CENTER)
 
             print(f'Sem resultados para: {query}')
+
 
         self.disconnect_db()
         self.query_entry.delete(0, ttk.END)
