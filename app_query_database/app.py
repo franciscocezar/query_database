@@ -4,7 +4,7 @@ import sqlite3
 from pathlib import Path
 from ttkbootstrap.constants import *
 
-#  https://drive.google.com/file/d/1zZRnni6zPnHbTkcUNbh-mhxktnEuv0dy/view?usp=share_link
+
 class App:
     def __init__(self):
         self.root = ttk.Window(themename="cyborg")
@@ -124,124 +124,105 @@ class App:
         self.cursor = self.conn.cursor()
         df.to_sql('portaria_bd', self.conn, if_exists='replace', index=False)
 
-        print('Connecting to the database.')
-
     def disconnect_db(self):
         self.conn.close()
-        print('Disconnecting to the database.')
 
-    def select_list(self, event=None):
+    def select_list(self):
 
         self.database_data_list.delete(*self.database_data_list.get_children())
         self.connect_db()
         data_list = self.cursor.execute(""" SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa 
                                             FROM portaria_bd ORDER BY Data DESC; """)
 
-        count = 0
-        for data in data_list:
-            if count % 2 == 0:
+        for i, data in enumerate(data_list):
+            if i % 2 == 0:
                 self.database_data_list.insert(
                     '', ttk.END, values=(data[0], data[1], data[2], data[3], data[4],
-                                         data[5], data[6]), iid=count, tag=('evenrow',))
+                                         data[5], data[6]), iid=i, tag=('evenrow',))
             else:
                 self.database_data_list.insert(
                     '', ttk.END, values=(data[0], data[1], data[2], data[3], data[4],
-                                         data[5], data[6]), iid=count, tag=('oddrow',))
-            count += 1
+                                         data[5], data[6]), iid=i, tag=('oddrow',))
 
         self.disconnect_db()
+
+    def person(self, valor):
+        self.pessoa = valor
+        gente = valor.replace('[', '')
+        self.pesquisa += f"(Motorista LIKE '%{gente}%' OR Proprietário LIKE '%{gente}%') AND "
+
+    def color(self, valor):
+        cores = ['Preto', 'Prata', 'Vermelho', 'Verm', 'Branco', 'Cinza', 'Verde', 'Azul', 'Vinho', 'Amarelo',
+                 'Marrom', 'Laranja', 'Beje', 'Bege', 'Rosa', 'Dourado', 'Roxo']
+        for cor in cores:
+            if valor[:-1] == cor[:-1].lower():
+                self.pesquisa += f"Cor LIKE '%{valor[:-1]}%' AND "
+                self.cor = valor
+                break
 
     def read_data(self, event=None):
         self.connect_db()
         self.database_data_list.delete(*self.database_data_list.get_children())
         query = self.query_entry.get()
-        cor = modelo = marca = casa = pessoa = None
+        self.cor = modelo = marca = casa = self.pessoa = None
 
         if '/' in query:
-            cores = ['Azul', 'Vinho', 'Vermelho', 'Verm', 'Preto', 'Prata', 'Cinza', 'Verde', 'Branco', 'Beje', 'Marrom',
-                     'Amarelo', 'Laranja', 'Bege', 'Rosa', 'Dourado', 'Roxo']
-            cores = list(map(lambda x: x.lower(), cores))
-
             values = query.split('/')
             values = list(map(lambda x: x.lower(), values))
 
-            pesquisa = """ SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa 
-                           FROM portaria_bd WHERE """
+            self.pesquisa = """ SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa 
+                                FROM portaria_bd WHERE """
 
             for valor in values:
-                if '[' in valor:
-                    pessoa = valor
-                    gente = pessoa.replace('[', '')
-                    pesquisa += f"(Motorista LIKE '%{gente}%' OR Proprietário LIKE '%{gente}%') AND "
+                if '[' in valor: self.person(valor)
+                elif not valor.isnumeric(): self.color(valor)
 
-                if not valor.isnumeric():
-                    for cour in cores:
-                        if valor[:-1] == cour[:-1]:
-                            pesquisa += f"Cor LIKE '%{valor[:-1]}%' AND "
-                            cor = valor
-                            break
-
-            if pessoa: values.remove(pessoa)
-            if cor: values.remove(cor)
+            if self.pessoa: values.remove(self.pessoa)
+            if self.cor: values.remove(self.cor)
 
             if values:
                 for i in values:
                     if i.isnumeric() and len(i) <= 2 and 0 < int(i) <= 49:
-                        pesquisa += f"Casa LIKE '{i}' AND "
-                        print(i)
+                        self.pesquisa += f"Casa LIKE '{i}' AND "
                         values.remove(i)
                         break
                 if len(values) == 2:
-                    marca = values[1]
-                    modelo = values[0]
-                    pesquisa += f"((Modelo LIKE '%{modelo}%' OR  Marca LIKE '%{marca}%') OR " \
+                    modelo, marca = values[0], values[1]
+                    self.pesquisa += f"((Modelo LIKE '%{modelo}%' OR  Marca LIKE '%{marca}%') OR " \
                                 f"(Marca LIKE '%{modelo}%' OR  Modelo LIKE '%{marca}%')) AND "
                 elif len(values) == 1:
-                    pesquisa += f"(Modelo LIKE '%{values[0]}%' OR  Marca LIKE '%{values[0]}%') AND "
+                    self.pesquisa += f"(Modelo LIKE '%{values[0]}%' OR  Marca LIKE '%{values[0]}%') AND "
 
-            print(pesquisa)
-            pesquisa = pesquisa[:-4]
+            pesquisa = self.pesquisa[:-4]
             self.cursor.execute(f'{pesquisa} ORDER BY Data DESC')
         else:
             if query.isnumeric() and len(query) <= 2 and 0 < int(query) <= 49:
                 self.cursor.execute(f"""
-                SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa, COUNT(*) as total 
-                FROM portaria_bd
-                WHERE Casa LIKE '{query}' 
-                GROUP BY Motorista
-                ORDER BY total ASC """)
+                SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa
+                FROM portaria_bd WHERE Casa LIKE '{query}' 
+                ORDER BY Motorista """)
             else:
                 self.cursor.execute(f"""
-                    SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa 
-                    FROM portaria_bd
+                    SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa FROM portaria_bd
                     WHERE 
-                         Placa LIKE '%{query}%' OR 
-                         Cor LIKE '%{query}%' OR
-                         Modelo LIKE '%{query}%' OR
-                         Marca LIKE '%{query}%' OR
-                         Motorista LIKE '%{query}%' OR
-                         Proprietário LIKE '%{query}%'                
+                         Placa LIKE '%{query}%' OR Cor LIKE '%{query}%' OR Modelo LIKE '%{query}%' OR
+                         Marca LIKE '%{query}%' OR Motorista LIKE '%{query}%' OR Proprietário LIKE '%{query}%'                
                     ORDER BY Data DESC; """)
 
         searched_data = self.cursor.fetchall()
-        if self.label:
-            self.label.destroy()
+        if self.label: self.label.destroy()
 
         if searched_data:
-            count = 0
-            for i in searched_data:
-                if count % 2 == 0:
-                    self.database_data_list.insert('', ttk.END, values=i, tag=('evenrow',))
+            for i, v in enumerate(searched_data):
+                if i % 2 == 0:
+                    self.database_data_list.insert('', ttk.END, values=v, tag=('evenrow',))
                 else:
-                    self.database_data_list.insert('', ttk.END, values=i, tag=('oddrow',))
-                count += 1
+                    self.database_data_list.insert('', ttk.END, values=v, tag=('oddrow',))
+
         else:
-            self.label = ttk.Label(master=self.treeview_frame, bootstyle="inverse", padding=5, anchor=CENTER,
-                                   text=f'Sem resultados para: {query}')
+            self.label = ttk.Label(master=self.treeview_frame, bootstyle="inverse", padding=5,
+                                   anchor=CENTER, text=f'Sem resultados para: {query}')
             self.label.place(relx=0.5, rely=0.2, relwidth=0.4, anchor=CENTER)
-
-            print(f'Sem resultados para: {query}')
-
 
         self.disconnect_db()
         self.query_entry.delete(0, ttk.END)
