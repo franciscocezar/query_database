@@ -147,24 +147,53 @@ class App:
         self.disconnect_db()
 
     def person(self, valor):
-        self.pessoa = valor
-        gente = valor.replace('[', '')
-        self.pesquisa += f"(Motorista LIKE '%{gente}%' OR Proprietário LIKE '%{gente}%') AND "
+        if '[' in valor:
+            self.pessoa = valor
+            gente = valor.replace('[', '')
+            self.pesquisa += f"(Motorista LIKE '%{gente}%' OR Proprietário LIKE '%{gente}%') AND "
 
-    def color(self, valor):
+    def vehicle_color(self, valor):
         cores = ['Preto', 'Prata', 'Vermelho', 'Verm', 'Branco', 'Cinza', 'Verde', 'Azul', 'Vinho', 'Amarelo',
                  'Marrom', 'Laranja', 'Beje', 'Bege', 'Rosa', 'Dourado', 'Roxo']
-        for cor in cores:
-            if valor[:-1] == cor[:-1].lower():
-                self.pesquisa += f"Cor LIKE '%{valor[:-1]}%' AND "
-                self.cor = valor
+        if not valor.isnumeric():
+            for cor in cores:
+                if valor[:-1] == cor[:-1].lower():
+                    self.pesquisa += f"Cor LIKE '%{valor[:-1]}%' AND "
+                    self.cor = valor
+                    break
+
+    def normal_query(self, valor):
+        if valor.isnumeric() and len(valor) <= 2 and 0 < int(valor) <= 49:
+            self.cursor.execute(f"""
+            SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa
+            FROM portaria_bd WHERE Casa LIKE '{valor}' 
+            ORDER BY Motorista """)
+        else:
+            self.cursor.execute(f"""
+                SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa FROM portaria_bd
+                WHERE 
+                     Placa LIKE '%{valor}%' OR Cor LIKE '%{valor}%' OR Modelo LIKE '%{valor}%' OR
+                     Marca LIKE '%{valor}%' OR Motorista LIKE '%{valor}%' OR Proprietário LIKE '%{valor}%'                
+                ORDER BY Data DESC; """)
+
+    def multiple_items(self, lista):
+        for i in lista:
+            if i.isnumeric() and len(i) <= 2 and 0 < int(i) <= 49:
+                self.pesquisa += f"Casa LIKE '{i}' AND "
+                lista.remove(i)
                 break
+        if len(lista) == 2:
+            self.modelo, self.marca = lista[0], lista[1]
+            self.pesquisa += f"((Modelo LIKE '%{self.modelo}%' OR  Marca LIKE '%{self.marca}%') OR " \
+                             f"(Marca LIKE '%{self.modelo}%' OR  Modelo LIKE '%{self.marca}%')) AND "
+        elif len(lista) == 1:
+            self.pesquisa += f"(Modelo LIKE '%{lista[0]}%' OR  Marca LIKE '%{lista[0]}%') AND "
 
     def read_data(self, event=None):
         self.connect_db()
         self.database_data_list.delete(*self.database_data_list.get_children())
         query = self.query_entry.get()
-        self.cor = modelo = marca = casa = self.pessoa = None
+        self.cor = self.pessoa = self.modelo = self.marca = self.casa = None
 
         if '/' in query:
             values = query.split('/')
@@ -174,40 +203,19 @@ class App:
                                 FROM portaria_bd WHERE """
 
             for valor in values:
-                if '[' in valor: self.person(valor)
-                elif not valor.isnumeric(): self.color(valor)
-
-            if self.pessoa: values.remove(self.pessoa)
-            if self.cor: values.remove(self.cor)
-
+                self.person(valor)
+                self.vehicle_color(valor)
+            if self.pessoa:
+                values.remove(self.pessoa)
+            if self.cor:
+                values.remove(self.cor)
             if values:
-                for i in values:
-                    if i.isnumeric() and len(i) <= 2 and 0 < int(i) <= 49:
-                        self.pesquisa += f"Casa LIKE '{i}' AND "
-                        values.remove(i)
-                        break
-                if len(values) == 2:
-                    modelo, marca = values[0], values[1]
-                    self.pesquisa += f"((Modelo LIKE '%{modelo}%' OR  Marca LIKE '%{marca}%') OR " \
-                                f"(Marca LIKE '%{modelo}%' OR  Modelo LIKE '%{marca}%')) AND "
-                elif len(values) == 1:
-                    self.pesquisa += f"(Modelo LIKE '%{values[0]}%' OR  Marca LIKE '%{values[0]}%') AND "
+                self.multiple_items(values)
 
             pesquisa = self.pesquisa[:-4]
             self.cursor.execute(f'{pesquisa} ORDER BY Data DESC')
         else:
-            if query.isnumeric() and len(query) <= 2 and 0 < int(query) <= 49:
-                self.cursor.execute(f"""
-                SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa
-                FROM portaria_bd WHERE Casa LIKE '{query}' 
-                ORDER BY Motorista """)
-            else:
-                self.cursor.execute(f"""
-                    SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa FROM portaria_bd
-                    WHERE 
-                         Placa LIKE '%{query}%' OR Cor LIKE '%{query}%' OR Modelo LIKE '%{query}%' OR
-                         Marca LIKE '%{query}%' OR Motorista LIKE '%{query}%' OR Proprietário LIKE '%{query}%'                
-                    ORDER BY Data DESC; """)
+            self.normal_query(query)
 
         searched_data = self.cursor.fetchall()
         if self.label: self.label.destroy()
