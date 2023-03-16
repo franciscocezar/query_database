@@ -169,6 +169,8 @@ class App:
             FROM portaria_bd WHERE Casa LIKE '{valor}' 
             ORDER BY Motorista """)
         else:
+            if '[' in valor:
+                valor = valor.replace('[', '')
             self.cursor.execute(f"""
                 SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa FROM portaria_bd
                 WHERE 
@@ -183,17 +185,22 @@ class App:
                 lista.remove(i)
                 break
         if len(lista) == 2:
-            self.modelo, self.marca = lista[0], lista[1]
-            self.pesquisa += f"((Modelo LIKE '%{self.modelo}%' OR  Marca LIKE '%{self.marca}%') OR " \
-                             f"(Marca LIKE '%{self.modelo}%' OR  Modelo LIKE '%{self.marca}%')) AND "
+            modelo, marca = lista[0], lista[1]
+            self.pesquisa += f"((Modelo LIKE '%{modelo}%' OR  Marca LIKE '%{marca}%') OR " \
+                             f"(Marca LIKE '%{modelo}%' OR  Modelo LIKE '%{marca}%')) AND "
         elif len(lista) == 1:
             self.pesquisa += f"(Modelo LIKE '%{lista[0]}%' OR  Marca LIKE '%{lista[0]}%') AND "
+
+    def no_answer(self, query):
+        self.label = ttk.Label(master=self.treeview_frame, padding=5, anchor=CENTER,
+                               text=f'Sem resultados para: {query}', bootstyle=INVERSE)
+        self.label.place(relx=0.5, rely=0.2, relwidth=0.4, anchor=CENTER)
 
     def read_data(self, event=None):
         self.connect_db()
         self.database_data_list.delete(*self.database_data_list.get_children())
         query = self.query_entry.get()
-        self.cor = self.pessoa = self.modelo = self.marca = self.casa = None
+        self.cor = self.pessoa = self.casa = None
 
         if '/' in query:
             values = query.split('/')
@@ -228,9 +235,7 @@ class App:
                     self.database_data_list.insert('', ttk.END, values=v, tag=('oddrow',))
 
         else:
-            self.label = ttk.Label(master=self.treeview_frame, bootstyle="inverse", padding=5,
-                                   anchor=CENTER, text=f'Sem resultados para: {query}')
-            self.label.place(relx=0.5, rely=0.2, relwidth=0.4, anchor=CENTER)
+            self.normal_query(query)
 
         self.disconnect_db()
         self.query_entry.delete(0, ttk.END)
