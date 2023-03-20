@@ -235,7 +235,7 @@ class App:
                     self.database_data_list.insert('', ttk.END, values=v, tag=('oddrow',))
 
         else:
-            self.normal_query(query)
+            self.no_answer(query)
 
         self.disconnect_db()
         self.query_entry.delete(0, ttk.END)
