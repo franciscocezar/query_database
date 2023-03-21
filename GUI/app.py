@@ -1,6 +1,6 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
-from database_folder.database import Query
+from database_folder import Query
 
 
 class App(Query):
