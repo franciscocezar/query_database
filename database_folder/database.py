@@ -27,7 +27,7 @@ class Query(ConnectionDB):
         if '[' in valor:
             self.pessoa = valor
             gente = valor.replace('[', '')
-            self.pesquisa += f"(Motorista LIKE '%{gente}%' OR Proprietário LIKE '%{gente}%') AND "
+            self.__pesquisa += f"(Motorista LIKE '%{gente}%' OR Proprietário LIKE '%{gente}%') AND "
 
     def __vehicle_color_select(self, valor):
         cores = ['Preto', 'Prata', 'Vermelho', 'Verm',
@@ -38,36 +38,35 @@ class Query(ConnectionDB):
         if not valor.isnumeric():
             for cor in cores:
                 if valor[:-1] == cor[:-1].lower():
-                    self.pesquisa += f"Cor LIKE '%{valor[:-1]}%' AND "
+                    self.__pesquisa += f"Cor LIKE '%{valor[:-1]}%' AND "
                     self.cor = valor
                     break
 
     def __normal_query(self, valor):
         if valor.isnumeric() and len(valor) <= 2 and 0 < int(valor) <= 49:
-            resultado = f"""SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa
-            FROM portaria_bd WHERE Casa LIKE '{valor}' """
+            resultado = f"""{self.standard_query} WHERE Casa LIKE '{valor}' """
         else:
             if '[' in valor:
                 valor = valor.replace('[', '')
 
-            resultado = f"""SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa FROM portaria_bd
-                                WHERE Placa LIKE '%{valor}%' OR Cor LIKE '%{valor}%' OR Modelo LIKE '%{valor}%' OR
-                                Marca LIKE '%{valor}%' OR Motorista LIKE '%{valor}%' OR Proprietário LIKE '%{valor}%'                
-                                """
+            resultado = f"""{self.standard_query} WHERE 
+                            Placa LIKE '%{valor}%' OR Cor LIKE '%{valor}%' OR 
+                            Modelo LIKE '%{valor}%' OR Marca LIKE '%{valor}%' OR 
+                            Motorista LIKE '%{valor}%' OR Proprietário LIKE '%{valor}%' """
         return resultado
 
     def __multiple_items(self, lista):
         for i in lista:
             if i.isnumeric() and len(i) <= 2 and 0 < int(i) <= 49:
-                self.pesquisa += f"Casa LIKE '{i}' AND "
+                self.__pesquisa += f"Casa LIKE '{i}' AND "
                 lista.remove(i)
                 break
 
         if len(lista) == 2:
-            self.pesquisa += f"((Modelo LIKE '%{lista[0]}%' OR  Marca LIKE '%{lista[1]}%') OR " \
-                             f"(Marca LIKE '%{lista[0]}%' OR  Modelo LIKE '%{lista[1]}%')) AND "
+            self.__pesquisa += f"""((Modelo LIKE '%{lista[0]}%' OR  Marca LIKE '%{lista[1]}%') OR
+                                    (Marca LIKE '%{lista[0]}%' OR  Modelo LIKE '%{lista[1]}%')) AND """
         elif len(lista) == 1:
-            self.pesquisa += f"(Modelo LIKE '%{lista[0]}%' OR  Marca LIKE '%{lista[0]}%') AND "
+            self.__pesquisa += f"(Modelo LIKE '%{lista[0]}%' OR  Marca LIKE '%{lista[0]}%') AND "
 
     def read_data(self, data):
         self.connect_db()
@@ -77,8 +76,7 @@ class Query(ConnectionDB):
             queries_list = data.split('/')
             queries_list = list(map(lambda x: x.lower(), queries_list))
 
-            self.pesquisa = """ SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa 
-                                FROM portaria_bd WHERE """
+            self.__pesquisa = f""" {self.standard_query} WHERE """
 
             for query in queries_list:
                 self.__driver_or_owner_select(query)
@@ -88,7 +86,7 @@ class Query(ConnectionDB):
             if self.cor: queries_list.remove(self.cor)
             if queries_list: self.__multiple_items(queries_list)
 
-            pesquisa = self.pesquisa[:-4]
+            pesquisa = self.__pesquisa[:-4]
 
         else:
             pesquisa = self.__normal_query(data)
