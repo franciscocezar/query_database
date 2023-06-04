@@ -1,17 +1,11 @@
-import pandas as pd
 import sqlite3
-from pathlib import Path
 
 
 class ConnectionDB:
 
     def connect_db(self):
-        way = Path.cwd()
-        df = pd.read_csv(way / 'app_query_database/portaria_bd.csv')
-
         self.conn = sqlite3.connect('banco_de_dados.db')
         self.cursor = self.conn.cursor()
-        df.to_sql('portaria_bd', self.conn, if_exists='replace', index=False)
 
     def disconnect_db(self):
         self.conn.close()
@@ -20,8 +14,8 @@ class ConnectionDB:
 class Query(ConnectionDB):
 
     def __init__(self):
-        self.standard_query = """ SELECT Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa 
-                                   FROM portaria_bd """
+        self.standard_query = """ SELECT id, Placa, Cor, Modelo, Marca, Motorista, Proprietário, Casa 
+                                   FROM portaria_banco """
 
     def __driver_or_owner_select(self, valor):
         if '[' in valor:
@@ -93,18 +87,3 @@ class Query(ConnectionDB):
 
         self.disconnect_db()
         return pesquisa
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
